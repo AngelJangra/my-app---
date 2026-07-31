@@ -1,7 +1,7 @@
 {
   "name": "google-photos-oauth",
   "version": "1.0.0",
-  "description": "Google Photos OAuth 2.0 demo with Vercel and persistent sessions",
+  "description": "Google Photos OAuth 2.0 with Vercel & Upstash Redis",
   "main": "api/auth.js",
   "scripts": {
     "start": "node api/auth.js"
