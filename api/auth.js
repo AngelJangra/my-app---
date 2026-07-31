@@ -25,7 +25,8 @@ if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) 
             url: process.env.UPSTASH_REDIS_REST_URL,
             token: process.env.UPSTASH_REDIS_REST_TOKEN,
         });
-        const RedisStore = require('connect-redis')(session);
+        // Correct import for connect-redis v7+
+        const RedisStore = require('connect-redis');
         sessionStore = new RedisStore({ client: redisClient });
         console.log('[Session] Using Redis store (Upstash)');
     } catch (err) {
@@ -72,7 +73,10 @@ app.get('/auth', (req, res) => {
 
 app.get('/oauth2callback', async (req, res) => {
     const code = req.query.code;
-    if (!code) return res.status(400).send('No code provided.');
+    if (!code) {
+        console.error('[OAuth] No code provided');
+        return res.status(400).send('No authorization code provided.');
+    }
 
     try {
         const tokenResponse = await axios.post('https://oauth2.googleapis.com/token', {
@@ -88,9 +92,10 @@ app.get('/oauth2callback', async (req, res) => {
         req.session.refresh_token = refresh_token;
         req.session.expires_at = Date.now() + expires_in * 1000;
 
+        console.log('[OAuth] Token exchange successful.');
         res.redirect('/photos');
     } catch (error) {
-        console.error('Token exchange error:', error.response?.data || error.message);
+        console.error('[OAuth] Token exchange error:', error.response?.data || error.message);
         res.status(500).send('Token exchange failed.');
     }
 });
@@ -100,6 +105,7 @@ app.get('/photos', async (req, res) => {
         return res.redirect('/auth');
     }
 
+    // Refresh token if expired
     if (Date.now() > req.session.expires_at) {
         try {
             const refreshRes = await axios.post('https://oauth2.googleapis.com/token', {
@@ -110,8 +116,9 @@ app.get('/photos', async (req, res) => {
             });
             req.session.access_token = refreshRes.data.access_token;
             req.session.expires_at = Date.now() + refreshRes.data.expires_in * 1000;
+            console.log('[OAuth] Token refreshed.');
         } catch (e) {
-            console.error('Token refresh error:', e.response?.data || e.message);
+            console.error('[OAuth] Token refresh error:', e.response?.data || e.message);
             return res.redirect('/auth');
         }
     }
@@ -123,7 +130,7 @@ app.get('/photos', async (req, res) => {
         });
 
         const items = photosRes.data.mediaItems || [];
-        // Render a simple HTML gallery (you can replace with the polished version)
+        // Simple gallery (you can replace with the polished version)
         let html = `<h1>Your Photos</h1><p>${items.length} images loaded.</p>`;
         if (items.length > 0) {
             html += '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
@@ -134,7 +141,7 @@ app.get('/photos', async (req, res) => {
         }
         res.send(html);
     } catch (error) {
-        console.error('Photos fetch error:', error.response?.data || error.message);
+        console.error('[Photos] Fetch error:', error.response?.data || error.message);
         res.status(500).send('Error fetching photos.');
     }
 });
