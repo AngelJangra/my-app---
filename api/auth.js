@@ -1,6 +1,6 @@
 // ============================================================
 //  Google Photos OAuth 2.0 – Serverless Handler for Vercel
-//  Uses Express with session (in‑memory) and Axios.
+//  Uses Express, session (in‑memory), and Axios.
 // ============================================================
 
 const express = require('express');
@@ -10,18 +10,33 @@ const session = require('express-session');
 const app = express();
 
 // ============================================================
-//  CONFIG – Set these environment variables in Vercel Dashboard
+//  ENVIRONMENT VARIABLES (set in Vercel Dashboard)
 // ============================================================
 const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
-const SESSION_SECRET = process.env.SESSION_SECRET || 'your-super-secret-key-change-this';
+const SESSION_SECRET = process.env.SESSION_SECRET || 'fallback-secret-change-me';
 
-// For Vercel, we need the absolute URL of the app.
-// Use environment variable or fallback to the request host.
-const getBaseUrl = (req) => {
+// ============================================================
+//  FIXED REDIRECT URI – MUST MATCH EXACTLY IN GOOGLE CONSOLE
+//  For production, use your live domain.
+//  For local dev, you can use http://localhost:3000/oauth2callback
+// ============================================================
+// Hardcode production URI to avoid any dynamic mismatch.
+// Uncomment the line below and comment the dynamic one if you prefer.
+const REDIRECT_URI = process.env.REDIRECT_URI || 'https://my-photos-app-xi.vercel.app/oauth2callback';
+// For local testing, you can set REDIRECT_URI=http://localhost:3000/oauth2callback
+
+// Alternatively, keep dynamic (but ensure the host matches exactly).
+// We'll use a helper to get the base URL, but we will also allow hardcoding.
+function getBaseUrl(req) {
+    // If we have a hardcoded REDIRECT_URI, we can extract the base.
+    // But we'll use the request host for flexibility.
+    // For production, we trust the request host.
     return `${req.protocol}://${req.get('host')}`;
-};
+}
 
+// We'll use a function to get the redirect URI – but for safety we use the constant.
+// We'll use REDIRECT_URI constant directly.
 const SCOPES = ['https://www.googleapis.com/auth/photoslibrary.readonly'];
 
 // ============================================================
@@ -31,25 +46,41 @@ app.use(session({
     secret: SESSION_SECRET,
     resave: false,
     saveUninitialized: true,
-    cookie: { secure: process.env.NODE_ENV === 'production', maxAge: 24 * 60 * 60 * 1000 } // 1 day
+    cookie: {
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 24 * 60 * 60 * 1000 // 1 day
+    }
 }));
 
 app.use(express.json());
 
 // ============================================================
+//  LOGGING MIDDLEWARE (for debugging)
+// ============================================================
+app.use((req, res, next) => {
+    console.log(`[${req.method}] ${req.url}`);
+    next();
+});
+
+// ============================================================
 //  ROUTE: /auth – Redirect to Google's OAuth consent screen
 // ============================================================
 app.get('/auth', (req, res) => {
-    const baseUrl = getBaseUrl(req);
-    const redirectUri = `${baseUrl}/oauth2callback`;
+    // Ensure we have the required credentials
+    if (!CLIENT_ID) {
+        return res.status(500).send('❌ Missing GOOGLE_CLIENT_ID environment variable.');
+    }
+
+    // Construct the authorization URL
     const authUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' +
-        `client_id=${CLIENT_ID}` +
-        `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+        `client_id=${encodeURIComponent(CLIENT_ID)}` +
+        `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
         `&response_type=code` +
         `&scope=${encodeURIComponent(SCOPES.join(' '))}` +
         `&access_type=offline` +
         `&prompt=consent`;
 
+    console.log(`[Auth] Redirecting to: ${authUrl}`);
     res.redirect(authUrl);
 });
 
@@ -62,28 +93,25 @@ app.get('/oauth2callback', async (req, res) => {
         return res.status(400).send('❌ No authorization code provided.');
     }
 
-    const baseUrl = getBaseUrl(req);
-    const redirectUri = `${baseUrl}/oauth2callback`;
-
     try {
         const tokenResponse = await axios.post('https://oauth2.googleapis.com/token', {
             code: code,
             client_id: CLIENT_ID,
             client_secret: CLIENT_SECRET,
-            redirect_uri: redirectUri,
+            redirect_uri: REDIRECT_URI,   // MUST match exactly
             grant_type: 'authorization_code'
         });
 
         const { access_token, refresh_token, expires_in } = tokenResponse.data;
-        // Store tokens in session (in‑memory)
         req.session.access_token = access_token;
         req.session.refresh_token = refresh_token;
         req.session.expires_at = Date.now() + expires_in * 1000;
 
+        console.log('[OAuth] Token exchange successful.');
         res.redirect('/photos');
     } catch (error) {
-        console.error('Token exchange error:', error.response?.data || error.message);
-        res.status(500).send('❌ Failed to exchange authorization code. Check server logs.');
+        console.error('[OAuth] Token exchange error:', error.response?.data || error.message);
+        res.status(500).send(`❌ Failed to exchange authorization code. Error: ${error.message}`);
     }
 });
 
@@ -106,8 +134,9 @@ app.get('/photos', async (req, res) => {
             });
             req.session.access_token = refreshRes.data.access_token;
             req.session.expires_at = Date.now() + refreshRes.data.expires_in * 1000;
+            console.log('[OAuth] Token refreshed successfully.');
         } catch (e) {
-            console.error('Token refresh error:', e.response?.data || e.message);
+            console.error('[OAuth] Token refresh error:', e.response?.data || e.message);
             return res.redirect('/auth');
         }
     }
@@ -127,7 +156,7 @@ app.get('/photos', async (req, res) => {
             `);
         }
 
-        // Build a simple gallery HTML
+        // Build a simple gallery HTML (same as before, but we'll keep it clean)
         let html = `
         <!DOCTYPE html>
         <html>
@@ -178,16 +207,16 @@ app.get('/photos', async (req, res) => {
         </html>`;
         res.send(html);
     } catch (error) {
-        console.error('Photos fetch error:', error.response?.data || error.message);
+        console.error('[Photos] Fetch error:', error.response?.data || error.message);
         res.status(500).send('❌ Error fetching photos. Please try again.');
     }
 });
 
 // ============================================================
-//  ROOT – Redirect to static index.html or show a simple message
+//  ROOT – Redirect to static index.html
 // ============================================================
 app.get('/', (req, res) => {
-    res.redirect('/index.html'); // Vercel serves static files from root
+    res.redirect('/index.html');
 });
 
 // ============================================================
