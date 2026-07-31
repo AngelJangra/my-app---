@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- GOOGLE VERIFICATION TAG -->
+    <!-- Google Verification -->
     <meta name="google-site-verification" content="8TMublPk6cKiDPdVfw36qJnix3jxwlEBLSMhD2yX-uI" />
-    <title>My Photos Accessor – View your Google Photos</title>
+    <title>My Photos Accessor – View & browse your Google Photos</title>
     <style>
         * {
             margin: 0;
@@ -65,7 +65,7 @@
             text-decoration: none;
         }
         .hero {
-            padding: 72px 0 48px;
+            padding: 60px 0 40px;
             text-align: center;
         }
         .hero h1 {
@@ -80,11 +80,22 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
-        .hero p {
+        .hero .subhead {
             font-size: 20px;
             color: #475569;
-            max-width: 680px;
+            max-width: 720px;
+            margin: 0 auto 12px;
+        }
+        .hero .purpose {
+            font-size: 17px;
+            color: #334155;
+            max-width: 640px;
             margin: 0 auto 32px;
+            background: #f1f4f9;
+            padding: 16px 24px;
+            border-radius: 12px;
+            border-left: 4px solid #2563eb;
+            text-align: left;
         }
         .btn {
             display: inline-block;
@@ -107,15 +118,41 @@
         .btn:active {
             transform: scale(0.97);
         }
+        .about {
+            margin: 40px 0 20px;
+            padding: 32px 28px;
+            background: #ffffff;
+            border-radius: 20px;
+            border: 1px solid #e9edf2;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+        }
+        .about h2 {
+            font-size: 24px;
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 12px;
+        }
+        .about p {
+            color: #475569;
+            font-size: 16px;
+            max-width: 700px;
+        }
+        .about ul {
+            margin: 12px 0 0 22px;
+            color: #334155;
+        }
+        .about ul li {
+            margin-bottom: 6px;
+        }
         .features {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 32px;
-            padding: 48px 0 64px;
+            gap: 28px;
+            padding: 32px 0 48px;
         }
         .feature {
             background: #ffffff;
-            padding: 28px 20px;
+            padding: 24px 18px;
             border-radius: 20px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
             border: 1px solid #e9edf2;
@@ -158,8 +195,10 @@
         }
         @media (max-width: 640px) {
             .hero h1 { font-size: 32px; }
-            .hero p { font-size: 17px; }
+            .hero .subhead { font-size: 17px; }
+            .hero .purpose { font-size: 15px; padding: 14px 16px; }
             .nav a { margin-left: 16px; font-size: 14px; }
+            .about { padding: 24px 18px; }
         }
     </style>
 </head>
@@ -178,10 +217,27 @@
     <main class="container">
         <section class="hero">
             <h1>Your Google Photos, <br /><span class="highlight">simply accessible</span></h1>
-            <p>
-                <strong>My Photos Accessor</strong> is a lightweight tool that lets you view and browse your Google Photos library with a clean interface. We do not store or share any of your images – everything stays in your Google account.
+            <p class="subhead">
+                <strong>My Photos Accessor</strong> lets you view your entire Google Photos library in a clean, no‑clutter gallery.
             </p>
+            <div class="purpose">
+                <strong>📌 Purpose of this app:</strong><br />
+                This application is a lightweight viewer for your Google Photos. It does <em>not</em> store, share, or analyse your images – it simply displays them using Google’s official API. You remain in full control of your data at all times.
+            </div>
             <a href="/auth" class="btn">🔐 Connect with Google</a>
+        </section>
+
+        <section class="about">
+            <h2>About My Photos Accessor</h2>
+            <p>
+                This app was built for people who want a fast, straightforward way to browse their Google Photos without extra features or distractions. 
+                It uses Google’s OAuth 2.0 to get read‑only access to your library – nothing more.
+            </p>
+            <ul>
+                <li><strong>Read‑only access:</strong> we only retrieve your photos to show them to you.</li>
+                <li><strong>No data retention:</strong> we never store your images, albums, or personal information.</li>
+                <li><strong>Transparent:</strong> you can revoke access at any time from your Google Account.</li>
+            </ul>
         </section>
 
         <section class="features">
