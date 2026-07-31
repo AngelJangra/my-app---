@@ -1,6 +1,6 @@
 // ============================================================
 //  Google Photos OAuth 2.0 – Serverless Handler for Vercel
-//  Uses Express, session (in‑memory), and Axios.
+//  Includes a beautiful photo gallery at /photos
 // ============================================================
 
 const express = require('express');
@@ -17,26 +17,14 @@ const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const SESSION_SECRET = process.env.SESSION_SECRET || 'fallback-secret-change-me';
 
 // ============================================================
-//  FIXED REDIRECT URI – MUST MATCH EXACTLY IN GOOGLE CONSOLE
-//  For production, use your live domain.
-//  For local dev, you can use http://localhost:3000/oauth2callback
+//  FIXED REDIRECT URI – MUST BE EXACTLY THE SAME IN GOOGLE CONSOLE
 // ============================================================
-// Hardcode production URI to avoid any dynamic mismatch.
-// Uncomment the line below and comment the dynamic one if you prefer.
-const REDIRECT_URI = process.env.REDIRECT_URI || 'https://my-photos-app-xi.vercel.app/oauth2callback';
-// For local testing, you can set REDIRECT_URI=http://localhost:3000/oauth2callback
+// 🔥 CHANGE THIS TO YOUR ACTUAL DEPLOYED URL
+const REDIRECT_URI = 'https://my-photos-app-xi.vercel.app/oauth2callback';
 
-// Alternatively, keep dynamic (but ensure the host matches exactly).
-// We'll use a helper to get the base URL, but we will also allow hardcoding.
-function getBaseUrl(req) {
-    // If we have a hardcoded REDIRECT_URI, we can extract the base.
-    // But we'll use the request host for flexibility.
-    // For production, we trust the request host.
-    return `${req.protocol}://${req.get('host')}`;
-}
+// For local development, uncomment the line below and comment the above:
+// const REDIRECT_URI = 'http://localhost:3000/oauth2callback';
 
-// We'll use a function to get the redirect URI – but for safety we use the constant.
-// We'll use REDIRECT_URI constant directly.
 const SCOPES = ['https://www.googleapis.com/auth/photoslibrary.readonly'];
 
 // ============================================================
@@ -55,23 +43,13 @@ app.use(session({
 app.use(express.json());
 
 // ============================================================
-//  LOGGING MIDDLEWARE (for debugging)
-// ============================================================
-app.use((req, res, next) => {
-    console.log(`[${req.method}] ${req.url}`);
-    next();
-});
-
-// ============================================================
-//  ROUTE: /auth – Redirect to Google's OAuth consent screen
+//  ROUTE: /auth – Redirect to Google's consent screen
 // ============================================================
 app.get('/auth', (req, res) => {
-    // Ensure we have the required credentials
     if (!CLIENT_ID) {
-        return res.status(500).send('❌ Missing GOOGLE_CLIENT_ID environment variable.');
+        return res.status(500).send('❌ Missing GOOGLE_CLIENT_ID.');
     }
 
-    // Construct the authorization URL
     const authUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' +
         `client_id=${encodeURIComponent(CLIENT_ID)}` +
         `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
@@ -98,7 +76,7 @@ app.get('/oauth2callback', async (req, res) => {
             code: code,
             client_id: CLIENT_ID,
             client_secret: CLIENT_SECRET,
-            redirect_uri: REDIRECT_URI,   // MUST match exactly
+            redirect_uri: REDIRECT_URI,
             grant_type: 'authorization_code'
         });
 
@@ -116,7 +94,7 @@ app.get('/oauth2callback', async (req, res) => {
 });
 
 // ============================================================
-//  ROUTE: /photos – Fetch and display photos
+//  ROUTE: /photos – Beautiful, modern photo gallery
 // ============================================================
 app.get('/photos', async (req, res) => {
     if (!req.session.access_token) {
@@ -134,7 +112,7 @@ app.get('/photos', async (req, res) => {
             });
             req.session.access_token = refreshRes.data.access_token;
             req.session.expires_at = Date.now() + refreshRes.data.expires_in * 1000;
-            console.log('[OAuth] Token refreshed successfully.');
+            console.log('[OAuth] Token refreshed.');
         } catch (e) {
             console.error('[OAuth] Token refresh error:', e.response?.data || e.message);
             return res.redirect('/auth');
@@ -149,66 +127,220 @@ app.get('/photos', async (req, res) => {
 
         const items = photosRes.data.mediaItems || [];
 
-        if (items.length === 0) {
-            return res.send(`
-                <h1>📸 No photos found</h1>
-                <p><a href="/">Go back home</a></p>
-            `);
-        }
-
-        // Build a simple gallery HTML (same as before, but we'll keep it clean)
+        // Render a full, polished gallery
         let html = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>My Google Photos</title>
-            <style>
-                * { margin:0; padding:0; box-sizing:border-box; }
-                body { background:#0a0a12; color:#e0e0e0; font-family:'Segoe UI',sans-serif; padding:20px; }
-                .header { display:flex; justify-content:space-between; align-items:center; padding:16px 24px; background:#1a1a2e; border-radius:16px; margin-bottom:20px; }
-                .header h1 { color:#f7971e; }
-                .header a { color:#88ccff; text-decoration:none; }
-                .gallery { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:16px; max-width:1200px; margin:0 auto; }
-                .card { background:#1a1a2e; border-radius:12px; overflow:hidden; border:1px solid #2a2a44; transition:transform 0.2s; }
-                .card:hover { transform:scale(1.02); }
-                .card img { width:100%; height:180px; object-fit:cover; display:block; }
-                .card .info { padding:8px 12px; font-size:11px; color:#8a8aaa; }
-                .footer { text-align:center; color:#4a6a7a; margin-top:20px; }
-                .credit { text-align:center; color:#4a6a7a; font-size:11px; margin-top:24px; border-top:1px solid #2a2a44; padding-top:16px; }
-                .credit span { color:#f7971e; }
-                @media (max-width:600px) { .gallery { grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); } }
-            </style>
-        </head>
-        <body>
-            <div class="header">
-                <h1>📸 My Photos</h1>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Google Photos</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #0a0a12;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+            padding: 24px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+            padding: 16px 24px;
+            background: rgba(20, 20, 31, 0.6);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(42, 42, 68, 0.3);
+            margin-bottom: 28px;
+        }
+        .header h1 {
+            font-size: 26px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #f7971e, #ffd200);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .header h1 span {
+            font-size: 28px;
+            -webkit-text-fill-color: initial;
+            color: #ff3b3b;
+        }
+        .header .actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        .header .actions a {
+            color: #88ccff;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 8px 18px;
+            border-radius: 40px;
+            border: 1px solid rgba(42, 42, 68, 0.4);
+            transition: all 0.2s;
+            background: rgba(42, 42, 68, 0.2);
+        }
+        .header .actions a:hover {
+            background: rgba(58, 58, 90, 0.6);
+            border-color: #f7971e;
+        }
+        .header .count {
+            color: #4a6a7a;
+            font-size: 14px;
+        }
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 18px;
+        }
+        .card {
+            background: rgba(20, 20, 31, 0.5);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid rgba(42, 42, 68, 0.3);
+            transition: all 0.3s ease;
+        }
+        .card:hover {
+            border-color: rgba(247, 151, 30, 0.4);
+            transform: translateY(-6px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+        }
+        .card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            display: block;
+            background: #1a1a2e;
+        }
+        .card .info {
+            padding: 12px 16px;
+            font-size: 12px;
+            color: #8a8aaa;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid rgba(42, 42, 68, 0.2);
+        }
+        .card .info .filename {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 130px;
+        }
+        .card .info .date {
+            color: #4a6a7a;
+        }
+        .no-photos {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 80px 20px;
+            color: #4a6a7a;
+            font-size: 20px;
+        }
+        .no-photos .big {
+            font-size: 48px;
+            display: block;
+            margin-bottom: 12px;
+        }
+        .footer-credit {
+            text-align: center;
+            color: #4a6a7a;
+            font-size: 12px;
+            margin-top: 36px;
+            border-top: 1px solid rgba(42, 42, 68, 0.2);
+            padding-top: 20px;
+        }
+        .footer-credit span {
+            color: #f7971e;
+            font-weight: 600;
+        }
+        @media (max-width: 640px) {
+            .gallery {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+                gap: 12px;
+            }
+            .card img {
+                height: 150px;
+            }
+            .header {
+                flex-direction: column;
+                align-items: stretch;
+                text-align: center;
+            }
+            .header .actions {
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><span>☠️</span> My Photos</h1>
+            <div class="actions">
+                <span class="count">${items.length} images</span>
                 <a href="/">← Home</a>
+                <a href="/auth">⟳ Re‑authorize</a>
             </div>
-            <div class="gallery">`;
+        </div>
+        <div class="gallery">`;
 
-        for (const item of items) {
-            const url = item.baseUrl || '';
-            const filename = item.filename || 'photo';
-            const time = item.mediaMetadata?.creationTime || '';
+        if (items.length === 0) {
             html += `
-                <div class="card">
-                    <img src="${url}" alt="${filename}" loading="lazy" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22180%22%3E%3Crect fill=%22%231a1a2e%22 width=%22200%22 height=%22180%22/%3E%3Ctext x=%2250%%22 y=%2250%%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%234a6a7a%22 font-size=%2214%22%3E⚠️%3C/text%3E%3C/svg%3E'">
-                    <div class="info">${filename} · ${new Date(time).toLocaleDateString()}</div>
+                <div class="no-photos">
+                    <span class="big">📸</span>
+                    No photos found in your Google Photos library.
                 </div>`;
+        } else {
+            for (const item of items) {
+                const url = item.baseUrl || '';
+                const filename = item.filename || 'photo';
+                const time = item.mediaMetadata?.creationTime || '';
+                const date = time ? new Date(time).toLocaleDateString() : '';
+                html += `
+            <div class="card">
+                <img src="${url}" alt="${filename}" loading="lazy" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22220%22 height=%22200%22%3E%3Crect fill=%22%231a1a2e%22 width=%22220%22 height=%22200%22/%3E%3Ctext x=%2250%%22 y=%2250%%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%234a6a7a%22 font-family=%22sans-serif%22 font-size=%2216%22%3E⚠️%3C/text%3E%3C/svg%3E'" />
+                <div class="info">
+                    <span class="filename" title="${filename}">${filename}</span>
+                    <span class="date">${date}</span>
+                </div>
+            </div>`;
+            }
         }
 
         html += `
-            </div>
-            <div class="footer">${items.length} photos loaded</div>
-            <div class="credit">Made with ❤️ by <span>AJ</span></div>
-        </body>
-        </html>`;
+        </div>
+        <div class="footer-credit">
+            Made with ❤️ by <span>AJ</span>
+        </div>
+    </div>
+</body>
+</html>`;
         res.send(html);
     } catch (error) {
         console.error('[Photos] Fetch error:', error.response?.data || error.message);
-        res.status(500).send('❌ Error fetching photos. Please try again.');
+        res.status(500).send(`
+            <h1>❌ Error fetching photos</h1>
+            <p>${error.message}</p>
+            <p><a href="/auth">Try re‑authorizing</a></p>
+        `);
     }
 });
 
@@ -220,6 +352,6 @@ app.get('/', (req, res) => {
 });
 
 // ============================================================
-//  EXPORT the Express app for Vercel
+//  EXPORT for Vercel
 // ============================================================
 module.exports = app;
