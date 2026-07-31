@@ -2,6 +2,7 @@
   "rewrites": [
     { "source": "/auth", "destination": "/api/auth" },
     { "source": "/oauth2callback", "destination": "/api/auth" },
-    { "source": "/photos", "destination": "/api/auth" }
+    { "source": "/photos", "destination": "/api/auth" },
+    { "source": "/privacy-policy", "destination": "/privacy-policy.html" }
   ]
 }
