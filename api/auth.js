@@ -14,7 +14,7 @@ const REDIRECT_URI = process.env.REDIRECT_URI || 'https://my-photos-app-xi.verce
 const SCOPES = ['https://www.googleapis.com/auth/photoslibrary.readonly'];
 
 // ============================================================
-//  COOKIE PARSER MIDDLEWARE (signed cookies)
+//  COOKIE PARSER
 // ============================================================
 app.use(cookieParser(COOKIE_SECRET));
 app.use(express.json());
@@ -86,7 +86,7 @@ app.get('/oauth2callback', async (req, res) => {
         res.redirect('/photos');
     } catch (error) {
         console.error('[OAuth] ❌ Token exchange error:', error.response?.data || error.message);
-        res.status(500).send('Token exchange failed.');
+        res.status(500).send(`Token exchange failed: ${error.message}`);
     }
 });
 
@@ -143,12 +143,18 @@ app.get('/photos', async (req, res) => {
         res.send(html);
     } catch (error) {
         console.error('[Photos] Fetch error:', error.response?.data || error.message);
-        res.status(500).send('Error fetching photos.');
+        const errorMsg = error.response?.data?.error?.message || error.message;
+        res.status(500).send(`
+            <h1>❌ Error fetching photos</h1>
+            <p><strong>${errorMsg}</strong></p>
+            <p>Full error: <pre>${JSON.stringify(error.response?.data || error.message, null, 2)}</pre></p>
+            <p><a href="/auth">Try re-authorizing</a></p>
+        `);
     }
 });
 
 // ============================================================
-//  DEBUG ROUTE
+//  DEBUG ROUTE – Check cookies
 // ============================================================
 app.get('/debug-cookies', (req, res) => {
     res.json({
