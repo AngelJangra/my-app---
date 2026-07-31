@@ -1,7 +1,6 @@
 const express = require('express');
 const axios = require('axios');
-const session = require('express-session');
-const { Redis } = require('@upstash/redis');
+const cookieParser = require('cookie-parser');
 
 const app = express();
 
@@ -10,57 +9,43 @@ const app = express();
 // ============================================================
 const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
-const SESSION_SECRET = process.env.SESSION_SECRET || 'fallback-secret';
+const COOKIE_SECRET = process.env.COOKIE_SECRET || 'fallback-secret-change-me';
 const REDIRECT_URI = process.env.REDIRECT_URI || 'https://my-photos-app-xi.vercel.app/oauth2callback';
 const SCOPES = ['https://www.googleapis.com/auth/photoslibrary.readonly'];
 
 // ============================================================
-//  SESSION STORE – TRY REDIS, FALLBACK TO MEMORY
+//  COOKIE PARSER MIDDLEWARE (signed cookies)
 // ============================================================
-let sessionStore;
-
-if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
-    try {
-        const redisClient = new Redis({
-            url: process.env.UPSTASH_REDIS_REST_URL,
-            token: process.env.UPSTASH_REDIS_REST_TOKEN,
-        });
-        const RedisStore = require('connect-redis');
-        sessionStore = new RedisStore({ client: redisClient });
-        console.log('[Session] ✅ Using Redis store (Upstash)');
-    } catch (err) {
-        console.error('[Session] ❌ Redis init failed:', err.message);
-        sessionStore = new session.MemoryStore();
-    }
-} else {
-    console.warn('[Session] ⚠️ Upstash env vars missing – using MemoryStore');
-    sessionStore = new session.MemoryStore();
-}
-
-// ============================================================
-//  SESSION MIDDLEWARE – with aggressive save and logging
-// ============================================================
-app.use(session({
-    store: sessionStore,
-    secret: SESSION_SECRET,
-    resave: true,                 // Force save even if unmodified
-    saveUninitialized: true,      // Save empty sessions
-    cookie: {
-        secure: process.env.NODE_ENV === 'production',
-        httpOnly: true,
-        maxAge: 24 * 60 * 60 * 1000,
-        sameSite: 'lax',
-        // domain: '.vercel.app' // Uncomment if needed
-    }
-}));
-
-// Log session ID on each request (for debugging)
-app.use((req, res, next) => {
-    console.log(`[Session] ID: ${req.sessionID}, hasToken: ${!!req.session.access_token}`);
-    next();
-});
-
+app.use(cookieParser(COOKIE_SECRET));
 app.use(express.json());
+
+// ============================================================
+//  HELPER: Set tokens in signed cookies
+// ============================================================
+const setTokenCookies = (res, access_token, refresh_token, expires_in) => {
+    const maxAge = expires_in * 1000;
+    res.cookie('access_token', access_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        signed: true,
+        maxAge: maxAge,
+        sameSite: 'lax'
+    });
+    res.cookie('refresh_token', refresh_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        signed: true,
+        maxAge: 30 * 24 * 60 * 60 * 1000,
+        sameSite: 'lax'
+    });
+    res.cookie('expires_at', Date.now() + maxAge, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        signed: true,
+        maxAge: maxAge,
+        sameSite: 'lax'
+    });
+};
 
 // ============================================================
 //  ROUTES
@@ -95,24 +80,9 @@ app.get('/oauth2callback', async (req, res) => {
         });
 
         const { access_token, refresh_token, expires_in } = tokenResponse.data;
-        req.session.access_token = access_token;
-        req.session.refresh_token = refresh_token;
-        req.session.expires_at = Date.now() + expires_in * 1000;
+        setTokenCookies(res, access_token, refresh_token, expires_in);
 
-        // Force save the session before redirect
-        await new Promise((resolve, reject) => {
-            req.session.save((err) => {
-                if (err) {
-                    console.error('[OAuth] Session save error:', err);
-                    reject(err);
-                } else {
-                    console.log('[OAuth] Session saved successfully');
-                    resolve();
-                }
-            });
-        });
-
-        console.log('[OAuth] ✅ Token exchange successful. Redirecting to /photos');
+        console.log('[OAuth] ✅ Token exchange successful. Cookies set.');
         res.redirect('/photos');
     } catch (error) {
         console.error('[OAuth] ❌ Token exchange error:', error.response?.data || error.message);
@@ -121,38 +91,44 @@ app.get('/oauth2callback', async (req, res) => {
 });
 
 app.get('/photos', async (req, res) => {
-    console.log(`[Photos] Session ID: ${req.sessionID}, hasToken: ${!!req.session.access_token}`);
-    if (!req.session.access_token) {
-        console.log('[Photos] No token, redirecting to /auth');
+    const access_token = req.signedCookies.access_token;
+    const refresh_token = req.signedCookies.refresh_token;
+    const expires_at = req.signedCookies.expires_at;
+
+    if (!access_token) {
+        console.log('[Photos] No access token, redirecting to /auth');
         return res.redirect('/auth');
     }
 
-    if (Date.now() > req.session.expires_at) {
+    if (Date.now() > parseInt(expires_at || 0)) {
+        if (!refresh_token) {
+            console.log('[Photos] No refresh token, redirecting to /auth');
+            return res.redirect('/auth');
+        }
         try {
             const refreshRes = await axios.post('https://oauth2.googleapis.com/token', {
                 client_id: CLIENT_ID,
                 client_secret: CLIENT_SECRET,
-                refresh_token: req.session.refresh_token,
+                refresh_token: refresh_token,
                 grant_type: 'refresh_token'
             });
-            req.session.access_token = refreshRes.data.access_token;
-            req.session.expires_at = Date.now() + refreshRes.data.expires_in * 1000;
-            await new Promise((resolve, reject) => {
-                req.session.save((err) => {
-                    if (err) reject(err);
-                    else resolve();
-                });
-            });
-            console.log('[OAuth] Token refreshed and saved.');
+            const newAccess = refreshRes.data.access_token;
+            const newExpires = refreshRes.data.expires_in;
+            setTokenCookies(res, newAccess, refresh_token, newExpires);
+            console.log('[OAuth] Token refreshed and cookies updated.');
+            return res.redirect('/photos');
         } catch (e) {
             console.error('[OAuth] Token refresh error:', e.response?.data || e.message);
+            res.clearCookie('access_token');
+            res.clearCookie('refresh_token');
+            res.clearCookie('expires_at');
             return res.redirect('/auth');
         }
     }
 
     try {
         const photosRes = await axios.get('https://photoslibrary.googleapis.com/v1/mediaItems', {
-            headers: { Authorization: `Bearer ${req.session.access_token}` },
+            headers: { Authorization: `Bearer ${access_token}` },
             params: { pageSize: 50 }
         });
         const items = photosRes.data.mediaItems || [];
@@ -172,15 +148,15 @@ app.get('/photos', async (req, res) => {
 });
 
 // ============================================================
-//  DEBUG ROUTE – Check session state
+//  DEBUG ROUTE
 // ============================================================
-app.get('/debug-session', (req, res) => {
+app.get('/debug-cookies', (req, res) => {
     res.json({
-        sessionID: req.sessionID,
-        hasToken: !!req.session.access_token,
-        token: req.session.access_token ? 'present' : 'missing',
-        expires_at: req.session.expires_at || null,
-        store: process.env.UPSTASH_REDIS_REST_URL ? 'Redis' : 'Memory',
+        hasAccessToken: !!req.signedCookies.access_token,
+        hasRefreshToken: !!req.signedCookies.refresh_token,
+        expires_at: req.signedCookies.expires_at || null,
+        cookies: req.cookies,
+        signedCookies: req.signedCookies,
     });
 });
 
