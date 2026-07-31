@@ -1,12 +1,291 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>My Photo App</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Photo Access – View Your Google Photos</title>
+    <style>
+        /* ------------------------------------------------------------
+           RESET & BASE
+           ------------------------------------------------------------ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+            background: #f8fafc;
+            color: #1e293b;
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        a {
+            color: #2563eb;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        /* ------------------------------------------------------------
+           CONTAINER
+           ------------------------------------------------------------ */
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 24px;
+            flex: 1;
+        }
+
+        /* ------------------------------------------------------------
+           HEADER
+           ------------------------------------------------------------ */
+        .header {
+            background: #ffffff;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 16px 0;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+        }
+
+        .header .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: #0f172a;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logo span {
+            color: #2563eb;
+        }
+
+        .nav a {
+            margin-left: 24px;
+            font-weight: 500;
+            font-size: 15px;
+            color: #475569;
+            transition: color 0.2s;
+        }
+
+        .nav a:hover {
+            color: #2563eb;
+            text-decoration: none;
+        }
+
+        /* ------------------------------------------------------------
+           HERO
+           ------------------------------------------------------------ */
+        .hero {
+            padding: 64px 0 48px;
+            text-align: center;
+        }
+
+        .hero h1 {
+            font-size: 42px;
+            font-weight: 700;
+            line-height: 1.2;
+            color: #0f172a;
+            margin-bottom: 16px;
+        }
+
+        .hero h1 span {
+            background: linear-gradient(135deg, #2563eb, #7c3aed);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            font-size: 18px;
+            color: #475569;
+            max-width: 600px;
+            margin: 0 auto 32px;
+        }
+
+        .btn {
+            display: inline-block;
+            background: #2563eb;
+            color: #ffffff;
+            font-weight: 600;
+            padding: 14px 32px;
+            border-radius: 40px;
+            font-size: 18px;
+            border: none;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn:hover {
+            background: #1d4ed8;
+            text-decoration: none;
+            transform: translateY(-2px);
+        }
+
+        .btn:active {
+            transform: scale(0.96);
+        }
+
+        /* ------------------------------------------------------------
+           FEATURES
+           ------------------------------------------------------------ */
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 32px;
+            padding: 48px 0 64px;
+        }
+
+        .feature-card {
+            background: #ffffff;
+            padding: 24px 20px;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+            border: 1px solid #e2e8f0;
+            text-align: center;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .feature-card:hover {
+            border-color: #2563eb;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+        }
+
+        .feature-card .icon {
+            font-size: 36px;
+            display: block;
+            margin-bottom: 12px;
+        }
+
+        .feature-card h3 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #0f172a;
+        }
+
+        .feature-card p {
+            font-size: 14px;
+            color: #64748b;
+        }
+
+        /* ------------------------------------------------------------
+           FOOTER
+           ------------------------------------------------------------ */
+        .footer {
+            background: #ffffff;
+            border-top: 1px solid #e2e8f0;
+            padding: 24px 0;
+            margin-top: auto;
+            text-align: center;
+            font-size: 14px;
+            color: #94a3b8;
+        }
+
+        .footer a {
+            color: #475569;
+            margin: 0 12px;
+        }
+
+        .footer a:hover {
+            color: #2563eb;
+            text-decoration: none;
+        }
+
+        /* ------------------------------------------------------------
+           RESPONSIVE
+           ------------------------------------------------------------ */
+        @media (max-width: 640px) {
+            .hero h1 {
+                font-size: 30px;
+            }
+            .hero p {
+                font-size: 16px;
+            }
+            .nav a {
+                margin-left: 12px;
+                font-size: 14px;
+            }
+            .features {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 <body>
-    <h1>Welcome to My Photo App</h1>
-    <p>This app allows you to view your Google Photos.</p>
-    <!-- Important: Link to your privacy policy -->
-    <a href="/privacy-policy">Privacy Policy</a>
+
+    <!-- ========== HEADER ========== -->
+    <header class="header">
+        <div class="container">
+            <div class="logo">📸 <span>PhotoAccess</span></div>
+            <nav class="nav">
+                <a href="/">Home</a>
+                <a href="/privacy-policy">Privacy</a>
+                <a href="/auth">Sign in</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- ========== HERO ========== -->
+    <main class="container">
+        <section class="hero">
+            <h1>Your Google Photos, <br /><span>at your fingertips</span></h1>
+            <p>
+                Securely view, organize, and share your Google Photos library
+                with our lightweight and privacy‑first application.
+            </p>
+            <a href="/auth" class="btn">🔐 Connect with Google</a>
+        </section>
+
+        <!-- ========== FEATURES ========== -->
+        <section class="features">
+            <div class="feature-card">
+                <span class="icon">🖼️</span>
+                <h3>Full Gallery View</h3>
+                <p>Browse all your albums and photos in a clean, responsive grid.</p>
+            </div>
+            <div class="feature-card">
+                <span class="icon">🔒</span>
+                <h3>Privacy First</h3>
+                <p>We never store your data. All access is directly through Google’s secure OAuth.</p>
+            </div>
+            <div class="feature-card">
+                <span class="icon">⚡</span>
+                <h3>Fast & Lightweight</h3>
+                <p>Built with performance in mind — no unnecessary bloat, just photos.</p>
+            </div>
+            <div class="feature-card">
+                <span class="icon">📱</span>
+                <h3>Works Everywhere</h3>
+                <p>Responsive design that looks great on desktop, tablet, and mobile.</p>
+            </div>
+        </section>
+    </main>
+
+    <!-- ========== FOOTER ========== -->
+    <footer class="footer">
+        <div class="container">
+            <p>
+                &copy; 2026 PhotoAccess &bull;
+                <a href="/privacy-policy">Privacy Policy</a> &bull;
+                <a href="/">Home</a>
+            </p>
+        </div>
+    </footer>
+
 </body>
 </html>
