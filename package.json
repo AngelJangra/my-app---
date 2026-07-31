@@ -1,0 +1,14 @@
+{
+  "name": "google-photos-oauth",
+  "version": "1.0.0",
+  "description": "Google Photos OAuth 2.0 demo with Vercel",
+  "main": "api/auth.js",
+  "dependencies": {
+    "express": "^4.18.2",
+    "axios": "^1.6.0",
+    "express-session": "^1.17.3"
+  },
+  "scripts": {
+    "start": "node api/auth.js"
+  }
+}
