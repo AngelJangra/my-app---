@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Memories – View your Google Photos</title>
+    <!-- GOOGLE VERIFICATION TAG -->
+    <meta name="google-site-verification" content="8TMublPk6cKiDPdVfw36qJnix3jxwlEBLSMhD2yX-uI" />
+    <title>My Photos Accessor – View your Google Photos</title>
     <style>
         * {
             margin: 0;
@@ -32,7 +34,6 @@
             padding: 0 24px;
             flex: 1;
         }
-        /* Header */
         .header {
             background: #ffffff;
             border-bottom: 1px solid #e9edf2;
@@ -63,7 +64,6 @@
             color: #2563eb;
             text-decoration: none;
         }
-        /* Hero */
         .hero {
             padding: 72px 0 48px;
             text-align: center;
@@ -83,7 +83,7 @@
         .hero p {
             font-size: 20px;
             color: #475569;
-            max-width: 640px;
+            max-width: 680px;
             margin: 0 auto 32px;
         }
         .btn {
@@ -107,7 +107,6 @@
         .btn:active {
             transform: scale(0.97);
         }
-        /* Features */
         .features {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -141,7 +140,6 @@
             font-size: 14px;
             color: #64748b;
         }
-        /* Footer */
         .footer {
             background: #ffffff;
             border-top: 1px solid #e9edf2;
@@ -159,23 +157,16 @@
             text-decoration: none;
         }
         @media (max-width: 640px) {
-            .hero h1 {
-                font-size: 32px;
-            }
-            .hero p {
-                font-size: 17px;
-            }
-            .nav a {
-                margin-left: 16px;
-                font-size: 14px;
-            }
+            .hero h1 { font-size: 32px; }
+            .hero p { font-size: 17px; }
+            .nav a { margin-left: 16px; font-size: 14px; }
         }
     </style>
 </head>
 <body>
     <header class="header">
         <div class="container">
-            <div class="logo">📸 <span>Memories</span></div>
+            <div class="logo">📸 <span>My Photos Accessor</span></div>
             <nav class="nav">
                 <a href="/">Home</a>
                 <a href="/privacy-policy">Privacy</a>
@@ -186,10 +177,9 @@
 
     <main class="container">
         <section class="hero">
-            <h1>Your photos, <br /><span class="highlight">simply better</span></h1>
+            <h1>Your Google Photos, <br /><span class="highlight">simply accessible</span></h1>
             <p>
-                A clean, privacy‑first way to browse your Google Photos library.
-                No ads, no tracking – just your memories.
+                <strong>My Photos Accessor</strong> is a lightweight tool that lets you view and browse your Google Photos library with a clean interface. We do not store or share any of your images – everything stays in your Google account.
             </p>
             <a href="/auth" class="btn">🔐 Connect with Google</a>
         </section>
@@ -198,17 +188,17 @@
             <div class="feature">
                 <span class="icon">🖼️</span>
                 <h3>Full gallery</h3>
-                <p>View all your albums and photos in a responsive grid.</p>
+                <p>Browse your entire library in a responsive grid.</p>
             </div>
             <div class="feature">
                 <span class="icon">🔒</span>
                 <h3>Zero storage</h3>
-                <p>We never save your images. Everything stays in Google.</p>
+                <p>We never save your images – they stay with Google.</p>
             </div>
             <div class="feature">
                 <span class="icon">⚡</span>
                 <h3>Fast & light</h3>
-                <p>Built for speed – no unnecessary bloat.</p>
+                <p>No bloat, just your photos.</p>
             </div>
             <div class="feature">
                 <span class="icon">📱</span>
@@ -221,7 +211,7 @@
     <footer class="footer">
         <div class="container">
             <p>
-                &copy; 2026 Memories &bull;
+                &copy; 2026 My Photos Accessor &bull;
                 <a href="/privacy-policy">Privacy Policy</a> &bull;
                 <a href="/">Home</a>
             </p>
