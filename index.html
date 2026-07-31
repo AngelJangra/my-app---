@@ -3,235 +3,179 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Photo Access – View Your Google Photos</title>
+    <title>Memories – View your Google Photos</title>
     <style>
-        /* ------------------------------------------------------------
-           RESET & BASE
-           ------------------------------------------------------------ */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-
         body {
-            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
-            background: #f8fafc;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #f7f9fc;
             color: #1e293b;
             line-height: 1.6;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
         }
-
         a {
             color: #2563eb;
             text-decoration: none;
         }
-
         a:hover {
             text-decoration: underline;
         }
-
-        /* ------------------------------------------------------------
-           CONTAINER
-           ------------------------------------------------------------ */
         .container {
             max-width: 1100px;
             margin: 0 auto;
             padding: 0 24px;
             flex: 1;
         }
-
-        /* ------------------------------------------------------------
-           HEADER
-           ------------------------------------------------------------ */
+        /* Header */
         .header {
             background: #ffffff;
-            border-bottom: 1px solid #e2e8f0;
-            padding: 16px 0;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+            border-bottom: 1px solid #e9edf2;
+            padding: 18px 0;
         }
-
         .header .container {
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
-            gap: 12px;
         }
-
         .logo {
-            font-size: 24px;
+            font-size: 26px;
             font-weight: 700;
+            letter-spacing: -0.5px;
             color: #0f172a;
-            display: flex;
-            align-items: center;
-            gap: 8px;
         }
-
         .logo span {
             color: #2563eb;
         }
-
         .nav a {
-            margin-left: 24px;
+            margin-left: 28px;
             font-weight: 500;
-            font-size: 15px;
+            font-size: 16px;
             color: #475569;
-            transition: color 0.2s;
         }
-
         .nav a:hover {
             color: #2563eb;
             text-decoration: none;
         }
-
-        /* ------------------------------------------------------------
-           HERO
-           ------------------------------------------------------------ */
+        /* Hero */
         .hero {
-            padding: 64px 0 48px;
+            padding: 72px 0 48px;
             text-align: center;
         }
-
         .hero h1 {
-            font-size: 42px;
+            font-size: 44px;
             font-weight: 700;
             line-height: 1.2;
             color: #0f172a;
             margin-bottom: 16px;
         }
-
-        .hero h1 span {
+        .hero h1 .highlight {
             background: linear-gradient(135deg, #2563eb, #7c3aed);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
-
         .hero p {
-            font-size: 18px;
+            font-size: 20px;
             color: #475569;
-            max-width: 600px;
+            max-width: 640px;
             margin: 0 auto 32px;
         }
-
         .btn {
             display: inline-block;
             background: #2563eb;
             color: #ffffff;
             font-weight: 600;
-            padding: 14px 32px;
-            border-radius: 40px;
+            padding: 16px 36px;
+            border-radius: 48px;
             font-size: 18px;
             border: none;
             cursor: pointer;
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
             transition: background 0.2s, transform 0.1s;
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
         }
-
         .btn:hover {
             background: #1d4ed8;
-            text-decoration: none;
             transform: translateY(-2px);
+            text-decoration: none;
         }
-
         .btn:active {
-            transform: scale(0.96);
+            transform: scale(0.97);
         }
-
-        /* ------------------------------------------------------------
-           FEATURES
-           ------------------------------------------------------------ */
+        /* Features */
         .features {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 32px;
             padding: 48px 0 64px;
         }
-
-        .feature-card {
+        .feature {
             background: #ffffff;
-            padding: 24px 20px;
-            border-radius: 16px;
+            padding: 28px 20px;
+            border-radius: 20px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
-            border: 1px solid #e2e8f0;
+            border: 1px solid #e9edf2;
             text-align: center;
             transition: border-color 0.2s, box-shadow 0.2s;
         }
-
-        .feature-card:hover {
+        .feature:hover {
             border-color: #2563eb;
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
         }
-
-        .feature-card .icon {
+        .feature .icon {
             font-size: 36px;
             display: block;
             margin-bottom: 12px;
         }
-
-        .feature-card h3 {
+        .feature h3 {
             font-size: 18px;
             font-weight: 600;
             margin-bottom: 6px;
-            color: #0f172a;
         }
-
-        .feature-card p {
+        .feature p {
             font-size: 14px;
             color: #64748b;
         }
-
-        /* ------------------------------------------------------------
-           FOOTER
-           ------------------------------------------------------------ */
+        /* Footer */
         .footer {
             background: #ffffff;
-            border-top: 1px solid #e2e8f0;
+            border-top: 1px solid #e9edf2;
             padding: 24px 0;
-            margin-top: auto;
             text-align: center;
             font-size: 14px;
             color: #94a3b8;
         }
-
         .footer a {
             color: #475569;
             margin: 0 12px;
         }
-
         .footer a:hover {
             color: #2563eb;
             text-decoration: none;
         }
-
-        /* ------------------------------------------------------------
-           RESPONSIVE
-           ------------------------------------------------------------ */
         @media (max-width: 640px) {
             .hero h1 {
-                font-size: 30px;
+                font-size: 32px;
             }
             .hero p {
-                font-size: 16px;
+                font-size: 17px;
             }
             .nav a {
-                margin-left: 12px;
+                margin-left: 16px;
                 font-size: 14px;
-            }
-            .features {
-                grid-template-columns: 1fr;
             }
         }
     </style>
 </head>
 <body>
-
-    <!-- ========== HEADER ========== -->
     <header class="header">
         <div class="container">
-            <div class="logo">📸 <span>PhotoAccess</span></div>
+            <div class="logo">📸 <span>Memories</span></div>
             <nav class="nav">
                 <a href="/">Home</a>
                 <a href="/privacy-policy">Privacy</a>
@@ -240,52 +184,48 @@
         </div>
     </header>
 
-    <!-- ========== HERO ========== -->
     <main class="container">
         <section class="hero">
-            <h1>Your Google Photos, <br /><span>at your fingertips</span></h1>
+            <h1>Your photos, <br /><span class="highlight">simply better</span></h1>
             <p>
-                Securely view, organize, and share your Google Photos library
-                with our lightweight and privacy‑first application.
+                A clean, privacy‑first way to browse your Google Photos library.
+                No ads, no tracking – just your memories.
             </p>
             <a href="/auth" class="btn">🔐 Connect with Google</a>
         </section>
 
-        <!-- ========== FEATURES ========== -->
         <section class="features">
-            <div class="feature-card">
+            <div class="feature">
                 <span class="icon">🖼️</span>
-                <h3>Full Gallery View</h3>
-                <p>Browse all your albums and photos in a clean, responsive grid.</p>
+                <h3>Full gallery</h3>
+                <p>View all your albums and photos in a responsive grid.</p>
             </div>
-            <div class="feature-card">
+            <div class="feature">
                 <span class="icon">🔒</span>
-                <h3>Privacy First</h3>
-                <p>We never store your data. All access is directly through Google’s secure OAuth.</p>
+                <h3>Zero storage</h3>
+                <p>We never save your images. Everything stays in Google.</p>
             </div>
-            <div class="feature-card">
+            <div class="feature">
                 <span class="icon">⚡</span>
-                <h3>Fast & Lightweight</h3>
-                <p>Built with performance in mind — no unnecessary bloat, just photos.</p>
+                <h3>Fast & light</h3>
+                <p>Built for speed – no unnecessary bloat.</p>
             </div>
-            <div class="feature-card">
+            <div class="feature">
                 <span class="icon">📱</span>
-                <h3>Works Everywhere</h3>
-                <p>Responsive design that looks great on desktop, tablet, and mobile.</p>
+                <h3>Works anywhere</h3>
+                <p>Desktop, tablet, or mobile – it just works.</p>
             </div>
         </section>
     </main>
 
-    <!-- ========== FOOTER ========== -->
     <footer class="footer">
         <div class="container">
             <p>
-                &copy; 2026 PhotoAccess &bull;
+                &copy; 2026 Memories &bull;
                 <a href="/privacy-policy">Privacy Policy</a> &bull;
                 <a href="/">Home</a>
             </p>
         </div>
     </footer>
-
 </body>
 </html>
