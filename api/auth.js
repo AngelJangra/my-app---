@@ -25,7 +25,6 @@ if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) 
             url: process.env.UPSTASH_REDIS_REST_URL,
             token: process.env.UPSTASH_REDIS_REST_TOKEN,
         });
-        // Correct import for connect-redis v7+
         const RedisStore = require('connect-redis');
         sessionStore = new RedisStore({ client: redisClient });
         console.log('[Session] ✅ Using Redis store (Upstash)');
@@ -34,22 +33,32 @@ if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) 
         sessionStore = new session.MemoryStore();
     }
 } else {
-    console.warn('[Session] ⚠️ Upstash env vars missing – using MemoryStore (will cause redirect loop!)');
+    console.warn('[Session] ⚠️ Upstash env vars missing – using MemoryStore');
     sessionStore = new session.MemoryStore();
 }
 
+// ============================================================
+//  SESSION MIDDLEWARE – with aggressive save and logging
+// ============================================================
 app.use(session({
     store: sessionStore,
     secret: SESSION_SECRET,
-    resave: false,
-    saveUninitialized: false,
+    resave: true,                 // Force save even if unmodified
+    saveUninitialized: true,      // Save empty sessions
     cookie: {
         secure: process.env.NODE_ENV === 'production',
         httpOnly: true,
         maxAge: 24 * 60 * 60 * 1000,
         sameSite: 'lax',
+        // domain: '.vercel.app' // Uncomment if needed
     }
 }));
+
+// Log session ID on each request (for debugging)
+app.use((req, res, next) => {
+    console.log(`[Session] ID: ${req.sessionID}, hasToken: ${!!req.session.access_token}`);
+    next();
+});
 
 app.use(express.json());
 
@@ -90,7 +99,20 @@ app.get('/oauth2callback', async (req, res) => {
         req.session.refresh_token = refresh_token;
         req.session.expires_at = Date.now() + expires_in * 1000;
 
-        console.log('[OAuth] ✅ Token exchange successful.');
+        // Force save the session before redirect
+        await new Promise((resolve, reject) => {
+            req.session.save((err) => {
+                if (err) {
+                    console.error('[OAuth] Session save error:', err);
+                    reject(err);
+                } else {
+                    console.log('[OAuth] Session saved successfully');
+                    resolve();
+                }
+            });
+        });
+
+        console.log('[OAuth] ✅ Token exchange successful. Redirecting to /photos');
         res.redirect('/photos');
     } catch (error) {
         console.error('[OAuth] ❌ Token exchange error:', error.response?.data || error.message);
@@ -99,8 +121,9 @@ app.get('/oauth2callback', async (req, res) => {
 });
 
 app.get('/photos', async (req, res) => {
+    console.log(`[Photos] Session ID: ${req.sessionID}, hasToken: ${!!req.session.access_token}`);
     if (!req.session.access_token) {
-        console.log('[Photos] No token in session, redirecting to /auth');
+        console.log('[Photos] No token, redirecting to /auth');
         return res.redirect('/auth');
     }
 
@@ -114,7 +137,13 @@ app.get('/photos', async (req, res) => {
             });
             req.session.access_token = refreshRes.data.access_token;
             req.session.expires_at = Date.now() + refreshRes.data.expires_in * 1000;
-            console.log('[OAuth] Token refreshed.');
+            await new Promise((resolve, reject) => {
+                req.session.save((err) => {
+                    if (err) reject(err);
+                    else resolve();
+                });
+            });
+            console.log('[OAuth] Token refreshed and saved.');
         } catch (e) {
             console.error('[OAuth] Token refresh error:', e.response?.data || e.message);
             return res.redirect('/auth');
@@ -127,7 +156,6 @@ app.get('/photos', async (req, res) => {
             params: { pageSize: 50 }
         });
         const items = photosRes.data.mediaItems || [];
-        // Simple gallery (you can replace with your polished version)
         let html = `<h1>Your Photos</h1><p>${items.length} images loaded.</p>`;
         if (items.length > 0) {
             html += '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
@@ -143,17 +171,19 @@ app.get('/photos', async (req, res) => {
     }
 });
 
-app.get('/', (req, res) => res.redirect('/index.html'));
-
 // ============================================================
-//  TEST ROUTE TO VERIFY SESSION & REDIS
+//  DEBUG ROUTE – Check session state
 // ============================================================
 app.get('/debug-session', (req, res) => {
     res.json({
-        hasToken: !!req.session.access_token,
         sessionID: req.sessionID,
-        storeType: process.env.UPSTASH_REDIS_REST_URL ? 'Redis (Upstash)' : 'MemoryStore',
+        hasToken: !!req.session.access_token,
+        token: req.session.access_token ? 'present' : 'missing',
+        expires_at: req.session.expires_at || null,
+        store: process.env.UPSTASH_REDIS_REST_URL ? 'Redis' : 'Memory',
     });
 });
+
+app.get('/', (req, res) => res.redirect('/index.html'));
 
 module.exports = app;
